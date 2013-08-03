@@ -5,6 +5,6 @@ else
 	PWD :=  $(shell pwd)
 default:
 	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
-endif
 clean:
 	-rm *.o *.ko *.mod.[co] modules.order Module.symvers
+endif

@@ -1,0 +1,1 @@
+cmd_/home/yizhengming/test/ldd/hello/hello.ko := ld -r -m elf_i386 -T /home/yizhengming/linux-3.4.55/scripts/module-common.lds --build-id  -o /home/yizhengming/test/ldd/hello/hello.ko /home/yizhengming/test/ldd/hello/hello.o /home/yizhengming/test/ldd/hello/hello.mod.o

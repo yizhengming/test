@@ -1,0 +1,27 @@
+
+Howto test a driver
+===================
+
+1 function of driver 
+the device name is scullc that is a memory.
+the device only support operation : open/read/write/lseek/close.
+
+2 Implement the kernel part
+kernel register your device and initialize device structure.
+register function include scullc_llseek, scullc_read, scullc_write,
+scullc_open, scullc_release. scullc_aio_read and scullc_aio_write should
+be modified to use.
+you can  operate the device as operate memeory.
+
+3 Invoke from userspace
+you can operate the  scullc device by syscall.
+you should open the scullc and then read/write it.
+
+Usage:
+============
+a) make
+b) su
+c) ./scullc_load
+d) ls -l > /dev/scullc
+e) ./scullc_unload
+

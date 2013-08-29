@@ -1,0 +1,1 @@
+cmd_/home/yizhengming/bak_kgpu/services/test/calg2/calg2.ko := ld -r -m elf_x86_64 -T /home/yizhengming/linux-2.6.39.4/scripts/module-common.lds --build-id  -o /home/yizhengming/bak_kgpu/services/test/calg2/calg2.ko /home/yizhengming/bak_kgpu/services/test/calg2/calg2.o /home/yizhengming/bak_kgpu/services/test/calg2/calg2.mod.o

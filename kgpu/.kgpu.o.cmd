@@ -1,0 +1,1 @@
+cmd_/home/yizhengming/bak_kgpu/kgpu/kgpu.o := ld -m elf_x86_64   -r -o /home/yizhengming/bak_kgpu/kgpu/kgpu.o /home/yizhengming/bak_kgpu/kgpu/main.o /home/yizhengming/bak_kgpu/kgpu/kgpu_kutils.o /home/yizhengming/bak_kgpu/kgpu/kgpu_log.o 

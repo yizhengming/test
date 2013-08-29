@@ -1,0 +1,1 @@
+cmd_/home/yizhengming/bak_kgpu/services/raid6/raid456/39/raid456.o := ld -m elf_x86_64   -r -o /home/yizhengming/bak_kgpu/services/raid6/raid456/39/raid456.o /home/yizhengming/bak_kgpu/services/raid6/raid456/39/raid5.o 

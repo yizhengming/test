@@ -1,1 +1,0 @@
-cmd_/home/yizhengming/bak_kgpu/services/raid6/raid456/39/raid456.ko := ld -r -m elf_x86_64 -T /home/yizhengming/linux-2.6.39.4/scripts/module-common.lds --build-id  -o /home/yizhengming/bak_kgpu/services/raid6/raid456/39/raid456.ko /home/yizhengming/bak_kgpu/services/raid6/raid456/39/raid456.o /home/yizhengming/bak_kgpu/services/raid6/raid456/39/raid456.mod.o

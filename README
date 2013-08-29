@@ -1,0 +1,26 @@
+
+We use kgpu modules in linux kernel 2.6.39.4 of ubuntu 10.10(64-Bit).
+Graphics: nVidia Quadro 600(Memory: 1G) and  CUDA Toolkit 4.0.
+To build kernel 2.6.39.4, you just need to make a note of the following option: 
+	File systems->Miscellaneous filesystems->eCrypt filesystem layer support(M)
+
+Usage:
+
+cd bak_kgpu
+make
+cd build
+
+cp ecryptfs.ko /lib/moduled/$(shell uname -r)/kernel/fs/ecryptfs/
+sudo ./runkgpu
+
+mkdir testdir #Create testdir in anywhere to test ecrypt file, but don't in bak_kgpu
+sudo mount -t ecryptfs testdir testdir
+.....   #To operate ecryptfs, you can learn it from net.
+.....
+
+when you end, you should do the following thing:
+
+sudo rmmod ecryptfs
+cd bak_kgpu/build
+audo ./stopkgpu
+

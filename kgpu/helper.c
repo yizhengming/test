@@ -22,6 +22,8 @@
 #include <poll.h>
 #include "list.h"
 #include "helper.h"
+//#include "../services/gaes/libsrv_gaes/cuPrintf.cu"
+//#include "setupAES.cpp"
 
 struct _kgpu_sritem {
     struct kgpu_service_request sr;
@@ -245,9 +247,25 @@ static int kh_request_alloc_mem(struct _kgpu_sritem *sreq)
     }
 }
 
+#define RKLENGTH(keybits)  ((keybits)/8+28)
 static int kh_prepare_exec(struct _kgpu_sritem *sreq)
 {
     int r;
+
+	//struct kgpu_service_request *sr = sreq->sr;
+    //struct crypto_aes_ctx *hctx = (struct crypto_aes_ctx*)sr->hdata;
+    //struct crypto_aes_ctx *dctx = (struct crypto_aes_ctx*)sr->ddata;
+    //int nrounds;
+	//u32 *rk = (u32 *)malloc(sizeof(u32)*RKLENGTH(hctx->key_length));
+    //if (sr->s == &gaes_ecb_dec_srv) {
+     //   nrounds = rijndaelSetupDecrypt(rk, hctx->key_dec, hctx->key_length);
+      //  cudaMemcpy(dctx->key_dec, rk, RKLENGTH(hctx->key_length)*sizeof(u32), cudaMemcpyHostToDevice);
+	//} else {
+     //   nrounds = rijndaelSetupEncrypt(rk, hctx->key_enc, hctx->key_length);
+      //  cudaMemcpy(dctx->key_enc, rk, RKLENGTH(hctx->key_length)*sizeof(u32), cudaMemcpyHostToDevice);
+	//}
+
+
     if (gpu_alloc_stream(&sreq->sr)) {
 	r = -1;
     } else {
@@ -365,6 +383,7 @@ int main(int argc, char *argv[])
     kgpudev = "/dev/kgpu";
     service_lib_dir = "./";
 
+	//cuPrintfInit();
     while ((c = getopt(argc, argv, "d:l:v:")) != -1)
     {
 	switch (c)
@@ -394,5 +413,7 @@ int main(int argc, char *argv[])
     kh_load_all_services(service_lib_dir);
     kh_main_loop();
     kh_finit();
+	//cuPrintfDisplay(stdout, true);
+	//cuPrintfEnd();
     return 0;
 }

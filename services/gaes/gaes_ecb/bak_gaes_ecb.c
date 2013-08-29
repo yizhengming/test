@@ -156,7 +156,7 @@ crypto_gaes_ecb_crypt(
     struct crypto_gaes_ecb_ctx *ctx = crypto_blkcipher_ctx(tfm);
     struct blkcipher_walk walk;
 
-    buf = kgpu_vmalloc(rsz+32*sizeof(char));
+    buf = kgpu_vmalloc(rsz+sizeof(struct crypto_aes_ctx));
     if (!buf) {
 	g_log(KGPU_LOG_ERROR, "GPU buffer is null.\n");
 	return -EFAULT;
@@ -171,9 +171,9 @@ crypto_gaes_ecb_crypt(
 
     req->in = buf;
     req->out = buf;
-    req->insize = rsz+32*sizeof(char);
+    req->insize = rsz+sizeof(struct crypto_aes_ctx);
     req->outsize = sz;
-    req->udatasize = 32*sizeof(char);
+    req->udatasize = sizeof(struct crypto_aes_ctx);
     req->udata = buf+rsz;
 
     blkcipher_walk_init(&walk, dst, src, sz+offset);
@@ -194,8 +194,7 @@ crypto_gaes_ecb_crypt(
 	    break;
     }
 
-//	memcpy(ctx->key, "12345678901234567890123456789012", 32*sizeof(char));
-    memcpy(req->udata, ctx->key, 32*sizeof(char));   
+    memcpy(req->udata, &(ctx->aes_ctx), sizeof(struct crypto_aes_ctx));   
     strcpy(req->service_name, enc?"gaes_ecb-enc":"gaes_ecb-dec");
 
     if (c) {
@@ -259,7 +258,7 @@ crypto_gaes_ecb_crypt_zc(
     }
     
     addr = kgpu_alloc_mmap_area(
-	(inplace?rsz:2*rsz)+sizeof(char)*32);
+	(inplace?rsz:2*rsz)+sizeof(struct crypto_aes_ctx));
     if (!addr) {
 	free_page(TO_UL(data));
 	g_log(KGPU_LOG_ERROR, "GPU buffer space is null for"
@@ -280,12 +279,12 @@ crypto_gaes_ecb_crypt_zc(
 
     req->in = (void*)addr;
     req->out = (void*)(inplace?addr:addr+rsz+PAGE_SIZE);
-    req->insize = rsz+sizeof(char)*32;
+    req->insize = rsz+sizeof(struct crypto_aes_ctx);
     req->outsize = sz;
-    req->udatasize = sizeof(char)*32;
+    req->udatasize = sizeof(struct crypto_aes_ctx);
     req->udata = (void*)(addr+rsz);
 
-    memcpy(data, ctx->key, sizeof(char)*32);   
+    memcpy(data, &(ctx->aes_ctx), sizeof(struct crypto_aes_ctx));   
     strcpy(req->service_name, enc?"gaes_ecb-enc":"gaes_ecb-dec");
 
     pgoff = offset >> PAGE_SHIFT;

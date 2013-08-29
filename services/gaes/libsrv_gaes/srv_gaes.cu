@@ -66,6 +66,8 @@ static void dump_hex(u8* p, int rs, int cs)
  * Include device code
  */
 #include "dev.cu"
+#include "aes.cu"
+#include "setupAES.cpp"
 
 int gaes_ecb_compute_size_bpt(struct kgpu_service_request *sr)
 {
@@ -95,31 +97,103 @@ int gaes_ecb_compute_size_bp4t(struct kgpu_service_request *sr)
     return 0;
 }
 
+#define RKLENGTH(keybits) ((keybits)/8+28) 
+static int count = 0;
 int gaes_ecb_launch_bpt(struct kgpu_service_request *sr)
 {
-    struct crypto_aes_ctx *hctx = (struct crypto_aes_ctx*)sr->hdata;
-    struct crypto_aes_ctx *dctx = (struct crypto_aes_ctx*)sr->ddata;
-    
-    if (sr->s == &gaes_ecb_dec_srv)
-	aes_decrypt_bpt
-	    <<<dim3(sr->grid_x, sr->grid_y),
-	    dim3(sr->block_x, sr->block_y),
+    //struct crypto_aes_ctx *hctx = (struct crypto_aes_ctx*)sr->hdata;
+    //struct crypto_aes_ctx *dctx = (struct crypto_aes_ctx*)sr->ddata;
+	u8 *hkey;
+	u8 *dkey;
+	int blockDimX = 256+256;
+	int gridDimX = (sr->outsize/16+blockDimX)/blockDimX;
+	int keybits = 256;
+    int i;
+	//u32 *hencrypt_rk;
+	//u32 *hdecrypt_rk;
+	//u32 htd0[256];
+	//u32 *dtd0;
+
+	//hencrypt_rk = (u32 *)malloc(RKLENGTH(keybits)*sizeof(u32));
+	//hdecrypt_rk = (u32 *)malloc(RKLENGTH(keybits)*sizeof(u32));
+
+    //cudaMalloc(&dtd0, 256*sizeof(u32));
+    //cudaMemcpy(dtd0, htd0, 256*sizeof(u32), cudaMemcpyHostToDevice);
+
+	dkey = (u8 *)sr->ddata;
+	hkey = (u8 *)sr->hdata;
+    //memcpy(hkey,"01234567890123456789012345678912",32);
+    //printf("hkey= %s \n",hkey);
+
+
+
+    u32 *rk = new u32[RKLENGTH(keybits)];
+
+    nrounds_en = rijndaelSetupEncrypt(rk, hkey, keybits);
+
+	/*
+    printf("call setpAES_cuda--en--rk_len: %d\n", RKLENGTH(keybits));
+    for (i=0; i<60; i++) {
+        //rk[i] = entmp[i];
+        printf("%lu\n", rk[i]);
+    }    
+	*/
+
+    cudaMalloc(&encrypt_rk_dev, RKLENGTH(keybits)*sizeof(u32));
+    cudaMemcpy(encrypt_rk_dev, rk, RKLENGTH(keybits)*sizeof(u32), cudaMemcpyHostToDevice);
+
+    nrounds_de = rijndaelSetupDecrypt(rk, hkey, keybits);
+	/*
+    printf("call setpAES_cuda--de--rk_len: %d\n", RKLENGTH(keybits));
+    for (i=0; i<60; i++) {
+        //rk[i] = detmp[i];
+        printf("%lu\n", rk[i]);
+    }
+	*/
+    cudaMalloc(&decrypt_rk_dev, RKLENGTH(keybits)*sizeof(u32));
+    cudaMemcpy(decrypt_rk_dev, rk, RKLENGTH(keybits)*sizeof(u32), cudaMemcpyHostToDevice);
+
+
+    if (sr->s == &gaes_ecb_dec_srv) {
+    decryptKernel
+		<<<gridDimX,blockDimX,
 	    0, (cudaStream_t)(sr->stream)>>>
 	    (
-		(u32*)dctx->key_dec,
-		hctx->key_length/4+6,
-		(u8*)sr->dout
+		decrypt_rk_dev,
+		nrounds_de,
+		(u8*)sr->dout,
+		(u8*)sr->dout,
+		(int)sr->outsize/16
 		);
-    else
-	aes_encrypt_bpt
-	    <<<dim3(sr->grid_x, sr->grid_y),
-	    dim3(sr->block_x, sr->block_y),
+		/*
+    	cudaMemcpy(htd0, dtd0, 256*sizeof(u32), cudaMemcpyDeviceToHost);
+		printf("debug:=============htd0=====:\n");
+    	for (i=0; i<256; i++) {
+        	printf("%lu\n", htd0[i]);
+    	}
+		*/
+	}
+    else {
+	encryptKernel
+		<<<gridDimX,blockDimX,
 	    0, (cudaStream_t)(sr->stream)>>>
 	    (
-		(u32*)dctx->key_enc,
-		hctx->key_length/4+6,
-		(u8*)sr->dout
+		encrypt_rk_dev,
+		nrounds_en,
+		(u8*)sr->dout,
+		(u8*)sr->dout,
+		(int)sr->outsize/16
 		);
+		/*
+    	cudaMemcpy(hencrypt_rk, encrypt_rk_dev, RKLENGTH(keybits)*sizeof(u32), cudaMemcpyDeviceToHost);
+		printf("hencrypt_rk:\n");
+    	for (i=0; i<60; i++) {
+        	printf("%lu\n", hencrypt_rk[i]);
+    	}    
+		*/
+	}
+	cudaFree(decrypt_rk_dev);
+	cudaFree(encrypt_rk_dev);
     return 0;
 }
 
@@ -272,8 +346,8 @@ extern "C" int init_service(void *lh, int (*reg_srv)(struct kgpu_service*, void*
     int err;
     printf("[libsrv_gaes] Info: init gaes services\n");
 
-    cudaFuncSetCacheConfig(aes_decrypt_bpt, cudaFuncCachePreferL1);
-    cudaFuncSetCacheConfig(aes_encrypt_bpt, cudaFuncCachePreferL1);
+    cudaFuncSetCacheConfig(decryptKernel, cudaFuncCachePreferL1);
+    cudaFuncSetCacheConfig(encryptKernel, cudaFuncCachePreferL1);
     cudaFuncSetCacheConfig(aes_decrypt_bp4t, cudaFuncCachePreferL1);
     cudaFuncSetCacheConfig(aes_encrypt_bp4t, cudaFuncCachePreferL1);
     cudaFuncSetCacheConfig(aes_ctr_crypt, cudaFuncCachePreferL1);
